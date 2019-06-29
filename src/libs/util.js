@@ -1,12 +1,9 @@
 import axios from 'axios';
-import { getMenuList } from '@/api/index';
+import {getMenuList} from '@/api/index';
 import lazyLoading from './lazyLoading.js';
-import router from '@/router/index';
 import Cookies from "js-cookie";
 
-let util = {
-
-};
+let util = {};
 
 util.title = function (title) {
     title = title || 'XBoot前后端分离开发平台';
@@ -254,27 +251,28 @@ util.initRouter = function (vm) {
         // 第一次加载 读取数据
         let accessToken = window.localStorage.getItem('accessToken');
         // 加载菜单
-        axios.get(getMenuList, { headers: { 'accessToken': accessToken } }).then(res => {
-            let menuData = res.result;
-            if (!menuData) {
-                return;
-            }
-            util.initAllMenuData(constRoutes, menuData);
-            util.initRouterNode(otherRoutes, otherRouter);
-            // 添加所有主界面路由
-            vm.$store.commit('updateAppRouter', constRoutes.filter(item => item.children.length > 0));
-            // 添加全局路由
-            vm.$store.commit('updateDefaultRouter', otherRoutes);
-            // 添加菜单路由
-            util.initMenuData(vm, menuData);
-            // 缓存数据 修改加载标识
-            window.localStorage.setItem('menuData', JSON.stringify(menuData));
-            vm.$store.commit('setAdded', true);
-        });
+        axios.get(getMenuList, {headers: {'accessToken': accessToken}})
+            .then(res => {
+                let menuData = res.result;
+                if (!menuData) {
+                    return;
+                }
+                util.initAllMenuData(constRoutes, menuData);
+                util.initRouterNode(otherRoutes, otherRouter);
+                // 添加所有主界面路由
+                vm.$store.commit('updateAppRouter', constRoutes.filter(item => item.children.length > 0));
+                // 添加全局路由
+                vm.$store.commit('updateDefaultRouter', otherRoutes);
+                // 添加菜单路由
+                util.initMenuData(vm, menuData);
+                // 缓存数据 修改加载标识
+                window.localStorage.setItem('menuData', JSON.stringify(menuData));
+                vm.$store.commit('setAdded', true);
+            });
     } else {
         // 读取缓存数据
         let data = window.localStorage.getItem('menuData');
-        if(!data){
+        if (!data) {
             vm.$store.commit('setAdded', false);
             return;
         }
@@ -286,11 +284,10 @@ util.initRouter = function (vm) {
 
 // 添加所有顶部导航栏下的菜单路由
 util.initAllMenuData = function (constRoutes, data) {
-
     let allMenuData = [];
     data.forEach(e => {
-        if(e.type==-1){
-            e.children.forEach(item=>{
+        if (e.type === -1) {
+            e.children.forEach(item => {
                 allMenuData.push(item);
             })
         }
@@ -356,8 +353,7 @@ util.initMenuData = function (vm, data) {
 
 // 生成路由节点
 util.initRouterNode = function (routers, data) {
-
-    for (var item of data) {
+    for (let item of data) {
         let menu = Object.assign({}, item);
         // menu.component = import(`@/views/${menu.component}.vue`);
         menu.component = lazyLoading(menu.component);
