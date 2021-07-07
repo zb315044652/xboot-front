@@ -1,113 +1,226 @@
 <style lang="less">
-@import "./tree.less";
+@import "@/styles/tree-common.less";
 </style>
 <template>
   <div class="search">
     <Card>
-      <Row class="operation">
-        <Button @click="add" type="primary" icon="md-add">添加子节点</Button>
-        <Button @click="addRoot" icon="md-add">添加一级节点</Button>
-        <Button @click="delAll" icon="md-trash">批量删除</Button>
-        <Button @click="getParentList" icon="md-refresh">刷新</Button>
-        <i-switch v-model="strict" size="large" style="margin-left:5px">
-          <span slot="open">级联</span>
-          <span slot="close">单选</span>
-        </i-switch>
+      <Row class="operation" align="middle" justify="space-between">
+        <div>
+          <Button
+            @click="add"
+            type="primary"
+            icon="md-add"
+            v-show="showType == 'tree'"
+            >添加子节点</Button
+          >
+          <Button @click="addRoot" icon="md-add">添加一级节点</Button>
+          <Button @click="delAll" icon="md-trash">批量删除</Button>
+          <Button @click="getParentList" icon="md-refresh">刷新</Button>
+          <Input
+            v-model="searchKey"
+            suffix="ios-search"
+            @on-change="search"
+            placeholder="输入名称搜索"
+            clearable
+            style="width: 250px"
+            v-show="showType == 'list'"
+          />
+          <i-switch
+            v-model="strict"
+            size="large"
+            style="margin-left: 5px"
+            v-show="showType == 'tree'"
+          >
+            <span slot="open">级联</span>
+            <span slot="close">单选</span>
+          </i-switch>
+        </div>
+        <div>
+          <RadioGroup v-model="showType" type="button">
+            <Radio title="树结构" label="tree">
+              <Icon type="md-list"></Icon>
+            </Radio>
+            <Radio title="列表" label="list">
+              <Icon type="ios-apps"></Icon>
+            </Radio>
+          </RadioGroup>
+        </div>
       </Row>
-      <Row type="flex" justify="start" class="code-row-bg">
-        <Col span="6">
+      <Row type="flex" justify="start" :gutter="16" v-show="showType == 'tree'">
+        <Col :sm="8" :md="8" :lg="8" :xl="6">
           <Alert show-icon>
             当前选择编辑：
-            <span class="select-title">{{editTitle}}</span>
-            <a class="select-clear" v-if="form.id" @click="cancelEdit">取消选择</a>
+            <span class="select-title">{{ editTitle }}</span>
+            <a
+              class="select-clear"
+              v-show="form.id && editTitle"
+              @click="cancelEdit"
+              >取消选择</a
+            >
           </Alert>
           <Input
             v-model="searchKey"
             suffix="ios-search"
             @on-change="search"
-            placeholder="输入节点名搜索"
+            placeholder="输入名称搜索"
             clearable
           />
-          <div class="tree-bar" :style="{maxHeight: maxHeight}">
-            <Tree
-              ref="tree"
-              :data="data"
-              :load-data="loadData"
-              show-checkbox
-              @on-check-change="changeSelect"
-              @on-select-change="selectTree"
-              :check-strictly="!strict"
-            ></Tree>
+          <div style="position: relative">
+            <div class="tree-bar" :style="{ maxHeight: maxHeight }">
+              <Tree
+                ref="tree"
+                :data="data"
+                :load-data="loadData"
+                show-checkbox
+                @on-check-change="changeSelect"
+                @on-select-change="selectTree"
+                :check-strictly="!strict"
+              ></Tree>
+            </div>
+            <Spin size="large" fix v-if="loading"></Spin>
           </div>
-          <Spin size="large" fix v-if="loading"></Spin>
         </Col>
-        <Col span="9" style="margin-left:10px">
-          <Form ref="form" :model="form" :label-width="85" :rules="formValidate">
-            <FormItem label="上级节点" prop="parentTitle">
-              <Poptip trigger="click" placement="right-start" title="选择上级节点" width="250">
-                <Input v-model="form.parentTitle" readonly/>
-                <div slot="content" style="position:relative;min-height:5vh">
-                  <Tree :data="dataEdit" :load-data="loadData" @on-select-change="selectTreeEdit"></Tree>
-                  <Spin size="large" fix v-if="loadingEdit"></Spin>
-                </div>
-              </Poptip>
+        <Col :sm="16" :md="16" :lg="16" :xl="9">
+          <Form
+            ref="form"
+            :model="form"
+            :label-width="100"
+            :rules="formValidate"
+          >
+            <FormItem label="上级节点" prop="parentTitle" class="form-noheight">
+              <div style="display: flex">
+                <Input
+                  v-model="form.parentTitle"
+                  readonly
+                  style="margin-right: 10px"
+                />
+                <Poptip
+                  transfer
+                  trigger="click"
+                  placement="right-start"
+                  title="选择上级节点"
+                  width="250"
+                >
+                  <Button icon="md-list">选择分类</Button>
+                  <div slot="content" class="tree-bar tree-select">
+                    <Tree
+                      :data="dataEdit"
+                      :load-data="loadData"
+                      @on-select-change="selectTreeEdit"
+                    ></Tree>
+                    <Spin size="large" fix v-if="loadingEdit"></Spin>
+                  </div>
+                </Poptip>
+              </div>
             </FormItem>
             <FormItem label="节点名称" prop="title">
-              <Input v-model="form.title"/>
+              <Input v-model="form.title" />
             </FormItem>
             <FormItem label="排序值" prop="sortOrder">
-              <InputNumber :max="1000" :min="0" v-model="form.sortOrder"></InputNumber>
-              <span style="margin-left:5px">值越小越靠前，支持小数</span>
+              <Tooltip
+                trigger="hover"
+                placement="right"
+                content="值越小越靠前，支持小数"
+              >
+                <InputNumber
+                  :max="1000"
+                  :min="0"
+                  v-model="form.sortOrder"
+                ></InputNumber>
+              </Tooltip>
             </FormItem>
             <FormItem label="是否启用" prop="status">
-              <i-switch size="large" v-model="form.status" :true-value="0" :false-value="-1">
+              <i-switch
+                size="large"
+                v-model="form.status"
+                :true-value="0"
+                :false-value="-1"
+              >
                 <span slot="open">启用</span>
                 <span slot="close">禁用</span>
               </i-switch>
             </FormItem>
-            <FormItem label="是否为父节点">
-              <i-switch v-model="form.isParent">
-                <span slot="open">是</span>
-                <span slot="close">否</span>
-              </i-switch>
-            </FormItem>
-            <Form-item>
+            <FormItem class="br">
               <Button
                 @click="submitEdit"
                 :loading="submitLoading"
+                :disabled="!form.id || !editTitle"
                 type="primary"
                 icon="ios-create-outline"
-                style="margin-right:5px"
-              >修改并保存</Button>
+                >修改并保存</Button
+              >
               <Button @click="handleReset">重置</Button>
-            </Form-item>
+            </FormItem>
           </Form>
         </Col>
       </Row>
+      <Alert show-icon v-show="showType == 'list'">
+        已选择
+        <span class="select-count">{{ selectList.length }}</span> 项
+        <a class="select-clear" @click="clearSelectAll">清空</a>
+      </Alert>
+      <Table
+        row-key="title"
+        :load-data="loadData"
+        :columns="columns"
+        :data="data"
+        :loading="loading"
+        border
+        :update-show-children="true"
+        ref="table"
+        @on-selection-change="showSelect"
+        v-if="showType == 'list'"
+      ></Table>
     </Card>
 
-    <Modal :title="modalTitle" v-model="modalVisible" :mask-closable="false" :width="500">
-      <Form ref="formAdd" :model="formAdd" :label-width="85" :rules="formValidate">
+    <Modal
+      :title="modalTitle"
+      v-model="modalVisible"
+      :mask-closable="false"
+      :width="500"
+    >
+      <Form
+        ref="formAdd"
+        :model="formAdd"
+        :label-width="100"
+        :rules="formValidate"
+      >
         <div v-if="showParent">
-          <FormItem label="上级节点：">{{form.title}}</FormItem>
+          <FormItem label="上级节点：">{{ form.title }}</FormItem>
         </div>
         <FormItem label="节点名称" prop="title">
-          <Input v-model="formAdd.title"/>
+          <Input v-model="formAdd.title" />
         </FormItem>
         <FormItem label="排序值" prop="sortOrder">
-          <InputNumber :max="1000" :min="0" v-model="formAdd.sortOrder"></InputNumber>
-          <span style="margin-left:5px">值越小越靠前，支持小数</span>
+          <Tooltip
+            trigger="hover"
+            placement="right"
+            content="值越小越靠前，支持小数"
+          >
+            <InputNumber
+              :max="1000"
+              :min="0"
+              v-model="formAdd.sortOrder"
+            ></InputNumber>
+          </Tooltip>
         </FormItem>
         <FormItem label="是否启用" prop="status">
-          <i-switch size="large" v-model="formAdd.status" :true-value="0" :false-value="-1">
+          <i-switch
+            size="large"
+            v-model="formAdd.status"
+            :true-value="0"
+            :false-value="-1"
+          >
             <span slot="open">启用</span>
             <span slot="close">禁用</span>
           </i-switch>
         </FormItem>
       </Form>
       <div slot="footer">
-        <Button type="text" @click="modalVisible=false">取消</Button>
-        <Button type="primary" :loading="submitLoading" @click="submitAdd">提交</Button>
+        <Button type="text" @click="modalVisible = false">取消</Button>
+        <Button type="primary" :loading="submitLoading" @click="submitAdd"
+          >提交</Button
+        >
       </div>
     </Modal>
   </div>
@@ -118,13 +231,13 @@ export default {
   name: "tree",
   data() {
     return {
+      showType: "tree",
       loading: false, // 树加载状态
       maxHeight: "500px",
       strict: true,
       loadingEdit: false, // 编辑上级树加载状态
       modalVisible: false, // 添加显示
       selectList: [], // 多选数据
-      selectCount: 0, // 多选计数
       showParent: false, // 显示上级标识
       modalTitle: "", // 添加标题
       editTitle: "", // 编辑节点名称
@@ -136,18 +249,96 @@ export default {
         parentId: "",
         parentTitle: "",
         sortOrder: 0,
-        status: 0
+        status: 0,
       },
       formAdd: {
         // 添加对象初始化数据
       },
       formValidate: {
         // 表单验证规则
-        title: [{ required: true, message: "名称不能为空", trigger: "blur" }]
+        title: [{ required: true, message: "名称不能为空", trigger: "change" }],
+        sortOrder: [
+          {
+            required: true,
+            type: "number",
+            message: "排序值不能为空",
+            trigger: "change",
+          },
+        ],
       },
       submitLoading: false,
       data: [],
-      dataEdit: []
+      dataEdit: [],
+      columns: [
+        {
+          type: "selection",
+          width: 60,
+          align: "center",
+        },
+        {
+          type: "index",
+          width: 60,
+          align: "center",
+        },
+        {
+          title: "名称",
+          key: "title",
+          minWidth: 120,
+          sortable: true,
+          tree: true,
+        },
+        {
+          title: "排序",
+          key: "sortOrder",
+          width: 150,
+          sortable: true,
+          align: "center",
+          sortType: "asc",
+        },
+        {
+          title: "创建时间",
+          key: "createTime",
+          sortable: true,
+          width: 200,
+        },
+        {
+          title: "操作",
+          key: "action",
+          width: 300,
+          align: "center",
+          render: (h, params) => {
+            return h("div", [
+              h(
+                "a",
+                {
+                  on: {
+                    click: () => {
+                      this.tableAdd(params.row);
+                    },
+                  },
+                },
+                "添加子节点"
+              ),
+              h("Divider", {
+                props: {
+                  type: "vertical",
+                },
+              }),
+              h(
+                "a",
+                {
+                  on: {
+                    click: () => {
+                      this.remove(params.row);
+                    },
+                  },
+                },
+                "删除"
+              ),
+            ]);
+          },
+        },
+      ],
     };
   },
   methods: {
@@ -161,11 +352,12 @@ export default {
       // this.loading = true;
       // this.getRequest("一级数据请求路径，如/tree/getByParentId/0").then(res => {
       //   this.loading = false;
-      //   if (res.success == true) {
+      //   if (res.success) {
       //     res.result.forEach(function(e) {
       //       if (e.isParent) {
       //         e.loading = false;
       //         e.children = [];
+      //         e._loading = false;
       //       }
       //     });
       //     this.data = res.result;
@@ -180,6 +372,8 @@ export default {
           parentTitle: "一级节点",
           status: 0,
           loading: false,
+          sortOrder: 1,
+          createTime: "2020-12-10 19:51:59",
           children: [
             {
               title: "二级1",
@@ -188,39 +382,47 @@ export default {
               parentId: "1",
               status: 0,
               parentTitle: "一级1",
+              sortOrder: 2,
+              createTime: "2020-12-10 19:51:59",
               children: [
                 {
                   title: "三级1",
                   id: "3",
                   status: 0,
                   parentId: "2",
-                  parentTitle: "二级1"
-                }
-              ]
-            }
-          ]
+                  parentTitle: "二级1",
+                  sortOrder: 3,
+                  createTime: "2020-12-10 19:51:59",
+                },
+              ],
+            },
+          ],
         },
         {
           title: "一级2",
           id: "4",
           parentId: "0",
           parentTitle: "一级节点",
-          status: 0
+          status: 0,
+          sortOrder: 4,
+          createTime: "2020-12-10 19:51:59",
         },
         {
           title: "一级3",
           id: "5",
           parentId: "0",
           parentTitle: "一级节点",
-          status: -1
-        }
+          status: -1,
+          sortOrder: 5,
+          createTime: "2020-12-10 19:51:59",
+        },
       ];
     },
     getParentListEdit() {
       // this.loadingEdit = true;
       // this.getRequest("/tree/getByParentId/0").then(res => {
       //   this.loadingEdit = false;
-      //   if (res.success == true) {
+      //   if (res.success) {
       //     res.result.forEach(function(e) {
       //       if (e.isParent) {
       //         e.loading = false;
@@ -240,7 +442,7 @@ export default {
       this.dataEdit = [
         {
           id: "0",
-          title: "一级节点"
+          title: "一级节点",
         },
         {
           title: "一级1",
@@ -263,36 +465,37 @@ export default {
                   id: "3",
                   status: 0,
                   parentId: "2",
-                  parentTitle: "二级1"
-                }
-              ]
-            }
-          ]
+                  parentTitle: "二级1",
+                },
+              ],
+            },
+          ],
         },
         {
           title: "一级2",
           id: "4",
           parentId: "0",
           parentTitle: "一级节点",
-          status: 0
+          status: 0,
         },
         {
           title: "一级3",
           id: "5",
           parentId: "0",
           parentTitle: "一级节点",
-          status: -1
-        }
+          status: -1,
+        },
       ];
     },
     loadData(item, callback) {
       // 异步加载树子节点数据
       // this.getRequest("请求路径，如/tree/getByParentId/" + item.id).then(res => {
-      //   if (res.success == true) {
+      //   if (res.success) {
       //     res.result.forEach(function(e) {
       //       if (e.isParent) {
       //         e.loading = false;
       //         e.children = [];
+      //         e._loading = false;
       //       }
       //     });
       //     callback(res.result);
@@ -306,33 +509,46 @@ export default {
         // this.loading = true;
         // this.getRequest("搜索请求路径", { title: this.searchKey }).then(res => {
         //   this.loading = false;
-        //   if (res.success == true) {
+        //   if (res.success) {
+        //     res.result.forEach(function(e) {
+        //       if (e.isParent) {
+        //         e.loading = false;
+        //         e.children = [];
+        //         e._loading = false;
+        //       }
+        //     });
         //     this.data = res.result;
         //   }
         // });
         // 模拟请求成功
         this.data = [
           {
-            title: "这里需要请求后台接口",
+            title: "这里需要请求后端接口",
             id: "1",
             parentId: "0",
             parentTitle: "一级节点",
-            status: 0
+            status: 0,
+            sortOrder: 1,
+            createTime: "2020-12-10 19:51:59",
           },
           {
             title: "所以这里是假数据",
             id: "4",
             parentId: "0",
             parentTitle: "一级节点",
-            status: 0
+            status: 0,
+            sortOrder: 2,
+            createTime: "2020-12-10 19:51:59",
           },
           {
             title: "我是被禁用的节点",
             id: "5",
             parentId: "0",
             parentTitle: "一级节点",
-            status: -1
-          }
+            status: -1,
+            sortOrder: 3,
+            createTime: "2020-12-10 19:51:59",
+          },
         ];
       } else {
         // 为空重新加载
@@ -361,7 +577,7 @@ export default {
         data.selected = false;
       }
       this.$refs.form.resetFields();
-      delete this.form.id;
+      this.form.id = "";
       this.editTitle = "";
     },
     selectTreeEdit(v) {
@@ -374,6 +590,11 @@ export default {
         }
         let str = JSON.stringify(v[0]);
         let data = JSON.parse(str);
+        if (this.form.id == data.id) {
+          this.$Message.warning("请勿选择自己作为父节点");
+          v[0].selected = false;
+          return;
+        }
         this.form.parentId = data.id;
         this.form.parentTitle = data.title;
       }
@@ -383,7 +604,7 @@ export default {
       this.form.status = 0;
     },
     submitEdit() {
-      this.$refs.form.validate(valid => {
+      this.$refs.form.validate((valid) => {
         if (valid) {
           if (!this.form.id) {
             this.$Message.warning("请先点击选择要修改的节点");
@@ -393,7 +614,7 @@ export default {
           // 避免传入null字符串
           // this.postRequest("请求路径，如/tree/edit", this.form).then(res => {
           //   this.submitLoading = false;
-          //   if (res.success == true) {
+          //   if (res.success) {
           //     this.$Message.success("编辑成功");
           //     this.init();
           //     this.modalVisible = false;
@@ -407,12 +628,12 @@ export default {
       });
     },
     submitAdd() {
-      this.$refs.formAdd.validate(valid => {
+      this.$refs.formAdd.validate((valid) => {
         if (valid) {
           this.submitLoading = true;
           // this.postRequest("请求路径，如/tree/add", this.formAdd).then(res => {
           //   this.submitLoading = false;
-          //   if (res.success == true) {
+          //   if (res.success) {
           //     this.$Message.success("添加成功");
           //     this.init();
           //     this.modalVisible = false;
@@ -426,16 +647,19 @@ export default {
       });
     },
     add() {
-      if (this.form.id == "" || this.form.id == null) {
+      if (!this.form.id) {
         this.$Message.warning("请先点击选择一个节点");
         return;
       }
       this.modalTitle = "添加子节点";
       this.showParent = true;
+      if (!this.form.children) {
+        this.form.children = [];
+      }
       this.formAdd = {
         parentId: this.form.id,
-        sortOrder: 0,
-        status: 0
+        sortOrder: this.form.children.length + 1,
+        status: 0,
       };
       this.modalVisible = true;
     },
@@ -444,52 +668,75 @@ export default {
       this.showParent = false;
       this.formAdd = {
         parentId: 0,
-        sortOrder: 0,
-        status: 0
+        sortOrder: this.data.length + 1,
+        status: 0,
       };
       this.modalVisible = true;
     },
     changeSelect(v) {
-      this.selectCount = v.length;
       this.selectList = v;
     },
+    clearSelectAll() {
+      this.$refs.table.selectAll(false);
+    },
+    tableAdd(v) {
+      this.form = v;
+      this.add();
+      this.editTitle = "";
+      let data = this.$refs.tree.getSelectedNodes()[0];
+      if (data) {
+        data.selected = false;
+      }
+    },
+    showSelect(e) {
+      this.selectList = e;
+    },
+    remove(v) {
+      this.selectList = [];
+      this.selectList.push(v);
+      this.delAll();
+    },
     delAll() {
-      if (this.selectCount <= 0) {
+      if (this.selectList.length <= 0) {
         this.$Message.warning("您还未勾选要删除的数据");
         return;
       }
       this.$Modal.confirm({
         title: "确认删除",
-        content: "您确认要删除所选的 " + this.selectCount + " 条数据?",
+        content:
+          "您确认要删除所选的 " +
+          this.selectList.length +
+          " 条数据及其下级所有数据?",
+        loading: true,
         onOk: () => {
           let ids = "";
-          this.selectList.forEach(function(e) {
+          this.selectList.forEach(function (e) {
             ids += e.id + ",";
           });
           ids = ids.substring(0, ids.length - 1);
           // this.deleteRequest("请求路径，如/tree/delByIds/" + ids).then(res => {
-          //   if (res.success == true) {
+          //   this.$Modal.remove();
+          //   if (res.success) {
           //     this.$Message.success("删除成功");
           //     this.selectList = [];
-          //     this.selectCount = 0;
           //     this.cancelEdit();
           //     this.init();
           //   }
           // });
           // 模拟成功
+          this.$Modal.remove();
           this.$Message.success("删除成功");
           this.selectList = [];
-          this.selectCount = 0;
           this.cancelEdit();
-        }
+        },
       });
-    }
+    },
   },
   mounted() {
     // 计算高度
     let height = document.documentElement.clientHeight;
-    this.maxHeight = Number(height-287) + "px";
+    this.maxHeight = Number(height - 287) + "px";
     this.init();
-  }
+  },
 };
 </script>

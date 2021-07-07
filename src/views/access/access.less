@@ -1,45 +1,52 @@
 .access {
-    &-user-con {
+    &-user-content {
         height: 200px;
     }
-    .buttons {
-        margin: 0 2vw;
-    }
-    &-current-user-con {
+
+    &-current-user-content {
         text-align: center;
         padding-top: 10px;
-        img {
-            display: block;
-            width: 100px;
-            height: 100px;
-            border: 2px solid #dddde2;
-            border-radius: 50%;
-            margin: 0px auto 10px;
-        }
+
         p {
             display: block;
             padding: 20px 0 0;
         }
+
         b {
-            margin: 0 10px;
             color: #2d8cf0;
             display: block;
             overflow: hidden;
         }
     }
-    .example {
-        color: #2d8cf0;
-        font-family: "Helvetica Neue"
-    }
-    &-change-access-con {
-        &-row {
-            height: 200px;
+
+    .access-user-content {
+        height: 200px;
+
+        .access-buttons {
+            height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
         }
+    }
+
+    .content-table {
+        height: 240px;
+        overflow: hidden;
+    }
+
+    .content-role {
+        height: 240px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
     }
 }
 
 code {
-    font-family: Consolas, Menlo, Courier, monospace;
     font-size: 1em;
     display: inline-block;
     background: #f7f7f7;
@@ -55,13 +62,13 @@ code {
     justify-content: center;
     flex-direction: column;
     align-items: center;
-    overflow: hidden;
+
     p {
         display: block;
         padding: 10px 0 0;
     }
+
     b {
-        margin: 0 10px;
         color: #2d8cf0;
     }
 }
@@ -70,9 +77,9 @@ code {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 23px 0;
+    padding: 15px 0;
 }
 
-.role-demo{
+.role-demo {
     padding: 15px 0;
 }

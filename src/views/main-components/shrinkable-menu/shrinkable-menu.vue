@@ -1,83 +1,100 @@
 <style lang="less">
-    @import './styles/menu.less';
+@import "./styles/menu.less";
 </style>
 
 <template>
-    <div :style="{background: bgColor}" class="ivu-shrinkable-menu">
-        <slot name="top"></slot>
-        <sidebar-menu 
-            v-show="!shrink"
-            :menu-theme="theme" 
-            :menu-list="menuList" 
-            :open-names="openNames"
-            @on-change="handleChange"
-        ></sidebar-menu>
-        <sidebar-menu-shrink 
-            v-show="shrink"
-            :menu-theme="theme" 
-            :menu-list="menuList" 
-            :icon-color="shrinkIconColor"
-            @on-change="handleChange"
-        ></sidebar-menu-shrink>
-    </div>
+  <div
+    :style="{ background: bgColor }"
+    :class="`shrinkable-menu ${theme}-menu`"
+  >
+    <slot name="top"></slot>
+    <sidebar-menu
+      v-show="!shrink"
+      :theme="theme"
+      :menu-list="menuList"
+      :open-names="openNames"
+      @on-change="handleChange"
+    ></sidebar-menu>
+    <sidebar-menu-shrink
+      v-show="shrink"
+      :theme="theme"
+      :menu-list="menuList"
+      :open-names="openNames"
+      @on-change="handleChange"
+    ></sidebar-menu-shrink>
+  </div>
 </template>
 
 <script>
-import sidebarMenu from './components/sidebarMenu.vue';
-import sidebarMenuShrink from './components/sidebarMenuShrink.vue';
-import util from '@/libs/util';
+import sidebarMenu from "./components/sidebarMenu.vue";
+import sidebarMenuShrink from "./components/sidebarMenuShrink.vue";
 export default {
-    name: 'shrinkableMenu',
-    components: {
-        sidebarMenu,
-        sidebarMenuShrink
+  name: "shrinkableMenu",
+  components: {
+    sidebarMenu,
+    sidebarMenuShrink,
+  },
+  props: {
+    shrink: {
+      type: Boolean,
+      default: false,
     },
-    props: {
-        shrink: {
-            type: Boolean,
-            default: false
-        },
-        menuList: {
-            type: Array,
-            required: true
-        },
-        theme: {
-            type: String,
-            default: 'dark',
-            validator (val) {
-                return util.oneOf(val, ['dark', 'light']);
-            }
-        },
-        beforePush: {
-            type: Function
-        },
-        openNames: {
-            type: Array
-        }
+    menuList: {
+      type: Array,
+      required: true,
     },
-    computed: {
-        bgColor () {
-            return this.theme == 'dark' ? '#515a6e' : '#fff';
-        },
-        shrinkIconColor () {
-            return this.theme == 'dark' ? '#fff' : '#515a6e';
-        }
+    theme: {
+      type: String,
+      default: "darkblue",
     },
-    methods: {
-        handleChange (name) {
-            let willpush = true;
-            if (this.beforePush !== undefined) {
-                if (!this.beforePush(name)) {
-                    willpush = false;
-                }
-            }
-            if (willpush) {
-                this.$router.push({
-                    name: name
-                });
-            }
-            this.$emit('on-change', name);
+    beforePush: {
+      type: Function,
+    },
+  },
+  data() {
+    return {
+      openNames: [],
+    };
+  },
+  computed: {
+    bgColor() {
+      if (this.theme == "darkblue") {
+        return "#17233d";
+      } else if (this.theme == "dark") {
+        return "#515a6e";
+      } else if (this.theme == "black") {
+        return "#1f1f1f";
+      }
+      return "#fff";
+    },
+  },
+  methods: {
+    handleChange(name) {
+      let willpush = true;
+      if (this.beforePush !== undefined) {
+        if (!this.beforePush(name)) {
+          willpush = false;
         }
-    }
+      }
+      if (name == this.$route.name) {
+        willpush = false;
+      }
+      if (willpush) {
+        this.$router.push({
+          name: name,
+        });
+      }
+      this.$emit("on-change", name);
+    },
+  },
+  watch: {
+    // 监听路由变化
+    $route(to, from) {
+      this.openNames = [this.$route.matched[0].name];
+    },
+  },
+  mounted() {
+    this.openNames = [this.$route.matched[0].name];
+  },
 };
 </script>

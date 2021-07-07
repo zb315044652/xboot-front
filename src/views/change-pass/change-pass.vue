@@ -1,192 +1,172 @@
 <style lang="less">
-@import "./change-pass.less";
+@import "@/styles/drawer-common.less";
 </style>
 
 <template>
   <div>
-    <Card class="change-pass">
-      <p slot="title">
-        <Icon type="key"></Icon>
-        修改密码
-      </p>
+    <Drawer
+      title="修改密码"
+      v-model="visible"
+      width="450"
+      draggable
+      :mask-closable="false"
+    >
       <div>
-        <Form ref="editPasswordForm" :model="editPasswordForm" :label-width="100" label-position="right" :rules="passwordValidate" style="width:450px">
+        <Form
+          ref="form"
+          :model="form"
+          label-position="top"
+          :rules="formValidate"
+        >
           <FormItem label="原密码" prop="oldPass">
-            <Input type="password" v-model="editPasswordForm.oldPass" placeholder="请输入现在使用的密码"></Input>
+            <Input
+              type="password"
+              password
+              v-model="form.oldPass"
+              placeholder="请输入现在使用的密码"
+            />
           </FormItem>
           <FormItem label="新密码" prop="newPass">
-            <Poptip trigger="focus" placement="right" width="250">
-              <Input type="password" v-model="editPasswordForm.newPass" @on-change="strengthChange" placeholder="请输入新密码，长度为6-20个字符"></Input>
-              <div v-bind:class="tipStyle" slot="content">
-                <span class="words">强度 : {{strength}}</span>
-                <Slider v-model="strengthValue" :step="33" style="width:95%"></Slider>
-                请至少输入 6 个字符。请不要使<br>用容易被猜到的密码。
-              </div>
-            </Poptip>
+            <SetPassword
+              placeholder="请输入新密码，长度为6-20个字符"
+              v-model="form.newPass"
+              @on-change="changeInputPass"
+            />
           </FormItem>
           <FormItem label="确认新密码" prop="rePass">
-            <Input type="password" v-model="editPasswordForm.rePass" placeholder="请再次输入新密码"></Input>
-          </FormItem>
-          <FormItem>
-            <Button type="primary" style="width: 100px;margin-right:5px" :loading="savePassLoading" @click="saveEditPass">保存</Button>
-            <Button @click="cancelEditPass">取消</Button>
+            <Input
+              type="password"
+              password
+              v-model="form.rePass"
+              placeholder="请再次输入新密码"
+            />
           </FormItem>
         </Form>
+        <div class="drawer-footer br">
+          <Button type="primary" :loading="submitLoading" @click="submit"
+            >提交</Button
+          >
+          <Button @click="visible = false">取消</Button>
+        </div>
       </div>
-    </Card>
+    </Drawer>
   </div>
 </template>
 
 <script>
+import SetPassword from "@/views/my-components/xboot/set-password";
 import { changePass } from "@/api/index";
 export default {
-  name: "change_pass",
+  name: "change-pass",
+  components: {
+    SetPassword,
+  },
+  props: {
+    value: {
+      type: Boolean,
+      default: false,
+    },
+  },
   data() {
     const valideRePassword = (rule, value, callback) => {
-      if (value !== this.editPasswordForm.newPass) {
+      if (value !== this.form.newPass) {
         callback(new Error("两次输入密码不一致"));
       } else {
         callback();
       }
     };
     return {
-      savePassLoading: false,
-      tipStyle: "password-tip-none",
-      strength: "无",
-      strengthValue: 0,
-      editPasswordForm: {
+      visible: this.value,
+      maxHeight: 510,
+      submitLoading: false,
+      form: {
         oldPass: "",
         newPass: "",
-        rePass: ""
+        rePass: "",
       },
-      passwordValidate: {
+      strength: "",
+      formValidate: {
         oldPass: [
           {
             required: true,
             message: "请输入原密码",
-            trigger: "blur"
-          }
+            trigger: "change",
+          },
         ],
         newPass: [
           {
             required: true,
             message: "请输入新密码",
-            trigger: "blur"
+            trigger: "change",
           },
           {
             min: 6,
             message: "请至少输入6个字符",
-            trigger: "blur"
+            trigger: "blur",
           },
           {
             max: 32,
             message: "最多输入32个字符",
-            trigger: "blur"
-          }
+            trigger: "change",
+          },
         ],
         rePass: [
           {
             required: true,
             message: "请再次输入新密码",
-            trigger: "blur"
+            trigger: "change",
           },
           {
             validator: valideRePassword,
-            trigger: "blur"
-          }
-        ]
-      }
+            trigger: "change",
+          },
+        ],
+      },
     };
   },
   methods: {
-    init() {},
-    checkStrengthValue(v) {
-      // 评级制判断密码强度 最高5
-      let grade = 0;
-      if (/\d/.test(v)) {
-        grade++; //数字
-      }
-      if (/[a-z]/.test(v)) {
-        grade++; //小写
-      }
-      if (/[A-Z]/.test(v)) {
-        grade++; //大写
-      }
-      if (/\W/.test(v)) {
-        grade++; //特殊字符
-      }
-      if (v.length >= 10) {
-        grade++;
-      }
-      return grade;
+    changeInputPass(v, grade, strength) {
+      this.strength = strength;
     },
-    strengthChange() {
-      if (!this.editPasswordForm.newPass) {
-        this.tipStyle = "password-tip-none";
-        this.strength = "无";
-        this.strengthValue = 0;
-        return;
-      }
-      let grade = this.checkStrengthValue(this.editPasswordForm.newPass);
-      if (grade <= 1) {
-        this.tipStyle = "password-tip-weak";
-        this.strength = "弱";
-        this.strengthValue = 33;
-      } else if (grade >= 2 && grade <= 4) {
-        this.tipStyle = "password-tip-middle";
-        this.strength = "中";
-        this.strengthValue = 66;
-      } else {
-        this.tipStyle = "password-tip-strong";
-        this.strength = "强";
-        this.strengthValue = 100;
-      }
-    },
-    saveEditPass() {
+    submit() {
       let params = {
-        password: this.editPasswordForm.oldPass,
-        newPass: this.editPasswordForm.newPass,
-        passStrength: this.strength
+        password: this.form.oldPass,
+        newPass: this.form.newPass,
+        passStrength: this.strength,
       };
-      this.$refs["editPasswordForm"].validate(valid => {
+      this.$refs["form"].validate((valid) => {
         if (valid) {
-          this.savePassLoading = true;
-          changePass(params).then(res => {
-            this.savePassLoading = false;
-            if (res.success == true) {
+          this.submitLoading = true;
+          changePass(params).then((res) => {
+            this.submitLoading = false;
+            if (res.success) {
+              this.visible = false;
               this.$Modal.success({
                 title: "修改密码成功",
-                content: "修改密码成功，需重新登录",
-                onOk: () => {
-                  this.$store.commit("logout", this);
-                  this.$store.commit("clearOpenedSubmenu");
-                  this.$router.push({
-                    name: "login"
-                  });
-                }
+                content: "修改密码成功，请保管好您的新账号密码",
               });
             }
           });
         }
       });
     },
-    cancelEditPass() {
-      this.$store.commit("removeTag", "change_pass");
-      localStorage.pageOpenedList = JSON.stringify(
-        this.$store.state.app.pageOpenedList
-      );
-      let lastPageName = "";
-      let length = this.$store.state.app.pageOpenedList.length;
-      if (length > 1) {
-        lastPageName = this.$store.state.app.pageOpenedList[length - 1].name;
-      } else {
-        lastPageName = this.$store.state.app.pageOpenedList[0].name;
+    setCurrentValue(value) {
+      if (value === this.visible) {
+        return;
       }
-      this.$router.push({
-        name: lastPageName
-      });
-    }
+      this.visible = value;
+    },
   },
-  mounted() {}
+  watch: {
+    value(val) {
+      this.setCurrentValue(val);
+    },
+    visible(value) {
+      this.$emit("input", value);
+    },
+  },
+  mounted() {
+    this.maxHeight = Number(document.documentElement.clientHeight - 121) + "px";
+  },
 };
 </script>

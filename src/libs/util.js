@@ -9,7 +9,7 @@ let util = {
 };
 
 util.title = function (title) {
-    title = title || 'XBoot前后端分离开发平台';
+    title = title || 'XBoot一站式前后端分离快速开发平台';
     window.document.title = title;
 };
 
@@ -168,6 +168,9 @@ util.setCurrentPath = function (vm, name) {
 };
 
 util.openNewPage = function (vm, name, argu, query) {
+    if (!vm.$store) {
+        return;
+    }
     let pageOpenedList = vm.$store.state.app.pageOpenedList;
     let openedPageLen = pageOpenedList.length;
     let i = 0;
@@ -251,10 +254,12 @@ util.initRouter = function (vm) {
         return;
     }
     if (!vm.$store.state.app.added) {
+        vm.$Loading.start();
         // 第一次加载 读取数据
         let accessToken = window.localStorage.getItem('accessToken');
         // 加载菜单
         axios.get(getMenuList, { headers: { 'accessToken': accessToken } }).then(res => {
+            vm.$Loading.finish();
             let menuData = res.result;
             if (!menuData) {
                 return;
@@ -274,7 +279,7 @@ util.initRouter = function (vm) {
     } else {
         // 读取缓存数据
         let data = window.localStorage.getItem('menuData');
-        if(!data){
+        if (!data) {
             vm.$store.commit('setAdded', false);
             return;
         }
@@ -289,8 +294,8 @@ util.initAllMenuData = function (constRoutes, data) {
 
     let allMenuData = [];
     data.forEach(e => {
-        if(e.type==-1){
-            e.children.forEach(item=>{
+        if (e.type == -1) {
+            e.children.forEach(item => {
                 allMenuData.push(item);
             })
         }
@@ -308,7 +313,11 @@ util.initMenuData = function (vm, data) {
         let nav = {
             name: e.name,
             title: e.title,
-            icon: e.icon
+            icon: e.icon,
+            isMenu: e.isMenu,
+            url: e.url,
+            description: e.description,
+            component: e.component
         }
         navList.push(nav);
     })
@@ -370,7 +379,7 @@ util.initRouterNode = function (routers, data) {
         let meta = {};
         // 给页面添加权限、标题、第三方网页链接
         meta.permTypes = menu.permTypes ? menu.permTypes : null;
-        meta.title = menu.title ? menu.title + " - XBoot前后端分离开发平台 By: Exrick" : null;
+        meta.title = menu.title ? menu.title + " - XBoot一站式前后端分离快速开发平台 By: Exrick" : null;
         meta.url = menu.url ? menu.url : null;
         menu.meta = meta;
 

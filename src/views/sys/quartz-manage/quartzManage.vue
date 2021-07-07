@@ -1,55 +1,67 @@
 <style lang="less">
+@import "@/styles/table-common.less";
 @import "./quartzManage.less";
 </style>
 <template>
   <div class="search">
-    <Row>
-      <Col>
-        <Card>
-          <Row class="operation">
-            <Button @click="addRole" type="primary" icon="md-add">安排新任务</Button>
-            <Button @click="delAll" icon="md-trash">批量删除</Button>
-            <Button @click="init" icon="md-refresh">刷新</Button>
-            <circleLoading v-if="operationLoading"/>
-          </Row>
-          <Row>
-            <Alert show-icon>
-              已选择
-              <span class="select-count">{{selectCount}}</span> 项
-              <a class="select-clear" @click="clearSelectAll">清空</a>
-            </Alert>
-          </Row>
-          <Row>
-            <Table
-              :loading="loading"
-              border
-              :columns="columns"
-              :data="data"
-              ref="table"
-              sortable="custom"
-              @on-sort-change="changeSort"
-              @on-selection-change="changeSelect"
-            ></Table>
-          </Row>
-          <Row type="flex" justify="end" class="page">
-            <Page
-              :current="pageNumber"
-              :total="total"
-              :page-size="pageSize"
-              @on-change="changePage"
-              @on-page-size-change="changePageSize"
-              :page-size-opts="[10,20,50]"
-              size="small"
-              show-total
-              show-elevator
-              show-sizer
-            ></Page>
-          </Row>
-        </Card>
-      </Col>
-    </Row>
-    <Modal draggable :title="modalTitle" v-model="modalVisible" :mask-closable="false" :width="500">
-      <Form ref="form" :model="form" :label-width="90" :rules="formValidate">
+    <Card>
+      <Row class="operation">
+        <Button @click="addRole" type="primary" icon="md-add"
+          >添加新任务</Button
+        >
+        <Button @click="delAll" icon="md-trash">批量删除</Button>
+        <Button @click="init" icon="md-refresh">刷新</Button>
+        <Button type="dashed" @click="openTip = !openTip">{{
+          openTip ? "关闭提示" : "开启提示"
+        }}</Button>
+        <Input
+          v-model="searchForm.key"
+          suffix="ios-search"
+          @on-change="getDataList"
+          placeholder="输入关键词搜索"
+          clearable
+          style="width: 250px"
+        />
+      </Row>
+      <Alert show-icon v-show="openTip">
+        已选择
+        <span class="select-count">{{ selectList.length }}</span> 项
+        <a class="select-clear" @click="clearSelectAll">清空</a>
+      </Alert>
+      <Table
+        :loading="loading"
+        border
+        :columns="columns"
+        :data="data"
+        ref="table"
+        sortable="custom"
+        @on-sort-change="changeSort"
+        @on-selection-change="changeSelect"
+      ></Table>
+      <Row type="flex" justify="end" class="page">
+        <Page
+          :current="searchForm.pageNumber"
+          :total="total"
+          :page-size="searchForm.pageSize"
+          @on-change="changePage"
+          @on-page-size-change="changePageSize"
+          :page-size-opts="[10, 20, 50]"
+          size="small"
+          show-total
+          show-elevator
+          show-sizer
+        ></Page>
+      </Row>
+    </Card>
+
+    <Modal
+      draggable
+      :title="modalTitle"
+      v-model="modalVisible"
+      :mask-closable="false"
+      :width="500"
+    >
+      <Form ref="form" :model="form" :label-width="100" :rules="formValidate">
         <FormItem label="任务类引用路径" prop="jobClassName">
           <Input
             v-model="form.jobClassName"
@@ -57,22 +69,32 @@
             clearable
           />
         </FormItem>
-        <FormItem label="cron表达式" prop="cronExpression" style="margin-bottom: 5px;">
-          <Input v-model="form.cronExpression" clearable/>
-          <a target="_blank" href="http://cron.qqe2.com/">
-            <Icon type="md-arrow-dropright-circle" size="16" style="margin:0 3px 3px 0;"/>在线cron表达式生成
+        <FormItem
+          label="cron表达式"
+          prop="cronExpression"
+          style="margin-bottom: 5px"
+        >
+          <Input v-model="form.cronExpression" clearable />
+          <a target="_blank" href="https://www.pppet.net/">
+            <Icon
+              type="md-arrow-dropright-circle"
+              size="16"
+              style="margin: 0 3px 3px 0"
+            />在线cron表达式生成
           </a>
         </FormItem>
         <FormItem label="参数" prop="parameter">
-          <Input v-model="form.parameter"/>
+          <Input v-model="form.parameter" />
         </FormItem>
         <FormItem label="备注" prop="description">
-          <Input v-model="form.description"/>
+          <Input v-model="form.description" />
         </FormItem>
       </Form>
       <div slot="footer">
         <Button type="text" @click="cancelSubmit">取消</Button>
-        <Button type="primary" :loading="submitLoading" @click="handleSubmit">保存并安排</Button>
+        <Button type="primary" :loading="submitLoading" @click="handleSubmit"
+          >保存并执行</Button
+        >
       </div>
     </Modal>
   </div>
@@ -85,255 +107,235 @@ import {
   editQuartz,
   pauseQuartz,
   resumeQuartz,
-  deleteQuartz
+  deleteQuartz,
 } from "@/api/index";
-import circleLoading from "@/views/my-components/circle-loading.vue";
 export default {
   name: "quartz-manage",
-  components: {
-    circleLoading
-  },
   data() {
     return {
+      openTip: true,
       loading: true,
-      operationLoading: false,
       sortColumn: "createTime",
       sortType: "desc",
       modalType: 0,
       modalVisible: false,
       modalTitle: "",
+      searchForm: {
+        // 搜索框初始化对象
+        pageNumber: 1, // 当前页数
+        pageSize: 10, // 页面大小
+        sort: "createTime", // 默认排序字段
+        order: "desc", // 默认排序方式
+        key: "",
+      },
       form: {
         id: "",
         jobClassName: "",
         cronExpression: "",
         paramter: "",
-        description: ""
+        description: "",
       },
       formValidate: {
         jobClassName: [
-          { required: true, message: "任务类名不能为空", trigger: "blur" }
+          { required: true, message: "任务类名不能为空", trigger: "change" },
         ],
         cronExpression: [
-          { required: true, message: "cron表达式不能为空", trigger: "blur" }
-        ]
+          { required: true, message: "cron表达式不能为空", trigger: "change" },
+        ],
       },
       submitLoading: false,
       selectList: [],
-      selectCount: 0,
       columns: [
         {
           type: "selection",
           width: 60,
-          align: "center"
+          align: "center",
         },
         {
           type: "index",
           width: 60,
-          align: "center"
+          align: "center",
         },
         {
           title: "任务类",
           key: "jobClassName",
           sortable: true,
-          width: 200
+          minWidth: 300,
         },
         {
           title: "cron表达式",
           key: "cronExpression",
           sortable: true,
-          width: 200
+          width: 150,
         },
         {
           title: "参数",
           key: "parameter",
           sortable: true,
-          width: 180
+          minWidth: 180,
         },
         {
           title: "备注",
           key: "description",
           sortable: true,
-          minWidth: 180
+          minWidth: 180,
         },
         {
           title: "状态",
           key: "status",
           align: "center",
-          width: 140,
+          width: 130,
           render: (h, params) => {
             let re = "";
             if (params.row.status == 0) {
               return h("div", [
-                h(
-                  "Badge",
-                  {
-                    props: {
-                      status: "success",
-                      text: "执行中"
-                    }
-                  }
-                )
+                h("Badge", {
+                  props: {
+                    status: "success",
+                    text: "执行中",
+                  },
+                }),
               ]);
             } else if (params.row.status == -1) {
               return h("div", [
-                h(
-                  "Badge",
-                  {
-                    props: {
-                      status: "error",
-                      text: "已停止"
-                    }
-                  }
-                )
+                h("Badge", {
+                  props: {
+                    status: "error",
+                    text: "已停止",
+                  },
+                }),
               ]);
             }
           },
           filters: [
             {
               label: "执行中",
-              value: 0
+              value: 0,
             },
             {
               label: "已停止",
-              value: -1
-            }
+              value: -1,
+            },
           ],
           filterMultiple: false,
           filterMethod(value, row) {
-            if (value == 0) {
-              return row.status == 0;
-            } else if (value == -1) {
-              return row.status == -1;
-            }
-          }
+            return row.status == value;
+          },
+        },
+        {
+          title: "创建时间",
+          key: "createTime",
+          width: 170,
+          sortable: true,
+          sortType: "desc",
         },
         {
           title: "操作",
           key: "action",
           align: "center",
-          width: 280,
+          fixed: "right",
+          width: 220,
           render: (h, params) => {
             let runOrResume = "";
             if (params.row.status == 0) {
               runOrResume = h(
-                "Button",
+                "a",
                 {
-                  props: {
-                    type: "warning",
-                    size: "small",
-                    icon: "md-pause"
-                  },
-                  style: {
-                    marginRight: "5px"
-                  },
                   on: {
                     click: () => {
                       this.pause(params.row);
-                    }
-                  }
+                    },
+                  },
                 },
                 "暂停"
               );
             } else {
               runOrResume = h(
-                "Button",
+                "a",
                 {
-                  props: {
-                    type: "success",
-                    size: "small",
-                    icon: "md-play"
-                  },
-                  style: {
-                    marginRight: "5px"
-                  },
                   on: {
                     click: () => {
                       this.resume(params.row);
-                    }
-                  }
+                    },
+                  },
                 },
                 "恢复执行"
               );
             }
             return h("div", [
               runOrResume,
+              h("Divider", {
+                props: {
+                  type: "vertical",
+                },
+              }),
               h(
-                "Button",
+                "a",
                 {
-                  props: {
-                    type: "primary",
-                    size: "small"
-                  },
-                  style: {
-                    marginRight: "5px"
-                  },
                   on: {
                     click: () => {
                       this.edit(params.row);
-                    }
-                  }
+                    },
+                  },
                 },
                 "编辑"
               ),
+              h("Divider", {
+                props: {
+                  type: "vertical",
+                },
+              }),
               h(
-                "Button",
+                "a",
                 {
-                  props: {
-                    type: "error",
-                    size: "small"
-                  },
                   on: {
                     click: () => {
                       this.remove(params.row);
-                    }
-                  }
+                    },
+                  },
                 },
                 "删除"
-              )
+              ),
             ]);
-          }
-        }
+          },
+        },
       ],
       data: [],
-      pageNumber: 1,
-      pageSize: 10,
-      total: 0
+      total: 0,
     };
   },
   methods: {
     init() {
-      this.getQuartzList();
+      this.getDataList();
     },
     changePage(v) {
-      this.pageNumber = v;
-      this.getQuartzList();
+      this.searchForm.pageNumber = v;
+      this.getDataList();
       this.clearSelectAll();
     },
     changePageSize(v) {
-      this.pageSize = v;
-      this.getQuartzList();
+      this.searchForm.pageSize = v;
+      this.getDataList();
     },
     changeSort(e) {
-      this.sortColumn = e.key;
-      this.sortType = e.order;
+      this.searchForm.sort = e.key;
+      this.searchForm.order = e.order;
       if (e.order == "normal") {
-        this.sortType = "";
+        this.searchForm.order = "";
       }
-      this.getQuartzList();
+      this.getDataList();
     },
-    getQuartzList() {
+    getDataList() {
       this.loading = true;
-      let params = {
-        pageNumber: this.pageNumber,
-        pageSize: this.pageSize,
-        sort: this.sortColumn,
-        order: this.sortType
-      };
-      getQuartzListData(params).then(res => {
+      getQuartzListData(this.searchForm).then((res) => {
         this.loading = false;
-        if (res.success == true) {
+        if (res.success) {
           this.data = res.result.content;
           this.total = res.result.totalElements;
+          if (this.data.length == 0 && this.searchForm.pageNumber > 1) {
+            this.searchForm.pageNumber -= 1;
+            this.getDataList();
+          }
         }
       });
     },
@@ -341,26 +343,26 @@ export default {
       this.modalVisible = false;
     },
     handleSubmit() {
-      this.$refs.form.validate(valid => {
+      this.$refs.form.validate((valid) => {
         if (valid) {
           if (this.modalType == 0) {
             // 添加
             this.submitLoading = true;
-            addQuartz(this.form).then(res => {
+            addQuartz(this.form).then((res) => {
               this.submitLoading = false;
-              if (res.success == true) {
+              if (res.success) {
                 this.$Message.success("操作成功");
-                this.getQuartzList();
+                this.getDataList();
                 this.modalVisible = false;
               }
             });
           } else {
             this.submitLoading = true;
-            editQuartz(this.form).then(res => {
+            editQuartz(this.form).then((res) => {
               this.submitLoading = false;
-              if (res.success == true) {
+              if (res.success) {
                 this.$Message.success("操作成功");
-                this.getQuartzList();
+                this.getDataList();
                 this.modalVisible = false;
               }
             });
@@ -374,13 +376,14 @@ export default {
       this.$refs.form.resetFields();
       (this.form = {
         paramter: "",
-        description: ""
+        description: "",
       }),
         (this.modalVisible = true);
     },
     edit(v) {
       this.modalType = 1;
       this.modalTitle = "编辑任务";
+      this.$refs.form.resetFields();
       // 转换null为""
       for (let attr in v) {
         if (v[attr] == null) {
@@ -396,48 +399,49 @@ export default {
       this.$Modal.confirm({
         title: "确认停止",
         content: "您确认要停止任务 " + v.jobClassName + " ?",
+        loading: true,
         onOk: () => {
-          this.operationLoading = true;
-          pauseQuartz(v).then(res => {
-            this.operationLoading = false;
-            if (res.success == true) {
+          pauseQuartz(v).then((res) => {
+            this.$Modal.remove();
+            if (res.success) {
               this.$Message.success("操作成功");
-              this.getQuartzList();
+              this.getDataList();
             }
           });
-        }
+        },
       });
     },
     resume(v) {
       this.$Modal.confirm({
         title: "确认恢复",
         content: "您确认要恢复任务 " + v.jobClassName + " ?",
+        loading: true,
         onOk: () => {
-          this.operationLoading = true;
-          resumeQuartz(v).then(res => {
-            this.operationLoading = false;
-            if (res.success == true) {
+          resumeQuartz(v).then((res) => {
+            this.$Modal.remove();
+            if (res.success) {
               this.$Message.success("操作成功");
-              this.getQuartzList();
+              this.getDataList();
             }
           });
-        }
+        },
       });
     },
     remove(v) {
       this.$Modal.confirm({
         title: "确认删除",
         content: "您确认要删除任务 " + v.jobClassName + " ?",
+        loading: true,
         onOk: () => {
-          this.operationLoading = true;
-          deleteQuartz(v.id).then(res => {
-            this.operationLoading = false;
-            if (res.success == true) {
+          deleteQuartz({ ids: v.id }).then((res) => {
+            this.$Modal.remove();
+            if (res.success) {
               this.$Message.success("操作成功");
-              this.getQuartzList();
+              this.clearSelectAll();
+              this.getDataList();
             }
           });
-        }
+        },
       });
     },
     clearSelectAll() {
@@ -445,37 +449,36 @@ export default {
     },
     changeSelect(e) {
       this.selectList = e;
-      this.selectCount = e.length;
     },
     delAll() {
-      if (this.selectCount <= 0) {
+      if (this.selectList.length <= 0) {
         this.$Message.warning("您还未选择要删除的数据");
         return;
       }
       this.$Modal.confirm({
         title: "确认删除",
-        content: "您确认要删除所选的 " + this.selectCount + " 条数据?",
+        content: "您确认要删除所选的 " + this.selectList.length + " 条数据?",
+        loading: true,
         onOk: () => {
           let ids = "";
-          this.selectList.forEach(function(e) {
+          this.selectList.forEach(function (e) {
             ids += e.id + ",";
           });
           ids = ids.substring(0, ids.length - 1);
-          this.operationLoading = true;
-          deleteQuartz(ids).then(res => {
-            this.operationLoading = false;
-            if (res.success == true) {
+          deleteQuartz({ ids: ids }).then((res) => {
+            this.$Modal.remove();
+            if (res.success) {
               this.$Message.success("删除成功");
               this.clearSelectAll();
-              this.getQuartzList();
+              this.getDataList();
             }
           });
-        }
+        },
       });
-    }
+    },
   },
   mounted() {
     this.init();
-  }
+  },
 };
 </script>

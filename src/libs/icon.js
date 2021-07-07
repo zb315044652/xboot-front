@@ -714,7 +714,8 @@ export const icons = [
             "md-checkbox-outline"
         ],
         "tags": [
-            "checkbox"
+            "checkbox",
+            "success"
         ]
     },
     {
@@ -723,7 +724,8 @@ export const icons = [
             "md-checkbox"
         ],
         "tags": [
-            "checkbox"
+            "checkbox",
+            "success"
         ]
     },
     {
@@ -732,7 +734,8 @@ export const icons = [
             "md-checkmark-circle-outline"
         ],
         "tags": [
-            "checkmark"
+            "checkmark",
+            "success"
         ]
     },
     {
@@ -742,7 +745,8 @@ export const icons = [
         ],
         "tags": [
             "checkmark",
-            "circle"
+            "circle",
+            "success"
         ]
     },
     {
@@ -751,7 +755,8 @@ export const icons = [
             "md-checkmark"
         ],
         "tags": [
-            "checkmark"
+            "checkmark",
+            "success"
         ]
     },
     {
@@ -3503,6 +3508,75 @@ export const icons = [
         ],
         "tags": [
             "youtube"
+        ]
+    }
+]
+
+export const iconfont = [
+    {
+        "icons": [
+            "iconfont icon-github"
+        ],
+        "tags": [
+            "github"
+        ]
+    },
+    {
+        "icons": [
+            "iconfont icon-qq"
+        ],
+        "tags": [
+            "qq"
+        ]
+    },
+    {
+        "icons": [
+            "iconfont icon-weixin"
+        ],
+        "tags": [
+            "weixin"
+        ]
+    },
+    {
+        "icons": [
+            "iconfont icon-weibo"
+        ],
+        "tags": [
+            "weibo"
+        ]
+    },
+    {
+        "icons": [
+            "iconfont icon-dingding"
+        ],
+        "tags": [
+            "dingding"
+        ]
+    },
+    {
+        "icons": [
+            "iconfont icon-qiyeweixin"
+        ],
+        "tags": [
+            "qiyeweixin"
+        ]
+    },
+    {
+        "icons": [
+            "iconfont icon-menu-unfold"
+        ],
+        "tags": [
+            "menu",
+            "unfold"
+        ]
+    },
+    {
+        "icons": [
+            "iconfont icon-menu-fold"
+        ],
+        "tags": [
+            "menu",
+            "fold"
         ]
     }
 ]

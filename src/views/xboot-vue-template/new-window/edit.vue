@@ -1,25 +1,31 @@
 <style lang="less">
 </style>
 <template>
-    <div class="search">
-      <Row>
-        <Card>     
-          <p slot="title">
-            编辑
-          </p>
-          <Form ref="form" :model="form" :label-width="90" :rules="formValidate" style="position:relative">
-            <FormItem label="名称" prop="name">
-              <Input v-model="form.name" style="width: 400px"/>
-            </FormItem>
-            <Form-item>
-              <Button @click="handleSubmit" :loading="submitLoading" type="primary" style="margin-right:5px">提交并保存</Button>
-              <Button @click="handleReset">重置</Button>
-            </Form-item>
-            <Spin size="large" fix v-if="loading"></Spin>
-          </Form> 
-        </Card>
-      </Row>
-    </div>
+  <div>
+    <Card>
+      <p slot="title">编辑</p>
+      <Form
+        ref="form"
+        :model="form"
+        :label-width="90"
+        :rules="formValidate"
+        style="position:relative"
+      >
+        <FormItem label="名称" prop="name">
+          <Input v-model="form.name" style="width: 400px" />
+        </FormItem>
+        <FormItem class="br">
+          <Button
+            @click="handleSubmit"
+            :loading="submitLoading"
+            type="primary"
+          >提交并保存</Button>
+          <Button @click="handleReset">重置</Button>
+        </FormItem>
+        <Spin size="large" fix v-if="loading"></Spin>
+      </Form>
+    </Card>
+  </div>
 </template>
 
 <script>
@@ -35,7 +41,7 @@ export default {
       },
       // 表单验证规则
       formValidate: {
-        name: [{ required: true, message: "不能为空", trigger: "blur" }]
+        name: [{ required: true, message: "不能为空", trigger: "change" }]
       },
       backRoute: ""
     };
@@ -54,7 +60,7 @@ export default {
       this.loading = true;
       // this.getRequest("请求地址，如/getById/" + this.form.id).then(res => {
       //   this.loading = false;
-      //   if (res.success == true) {
+      //   if (res.success) {
       //     // 转换null为""
       //     let v = res.result
       //     for (let attr in v) {
@@ -70,7 +76,7 @@ export default {
       // 模拟获取数据成功
       this.loading = false;
       if (this.form.id == "1") {
-        this.form.name = "X-BOOT";
+        this.form.name = "XBoot";
       } else {
         this.form.name = "Exrick";
       }
@@ -80,7 +86,7 @@ export default {
         if (valid) {
           // this.postRequest("请求路径", this.form).then(res => {
           //   this.submitLoading = false;
-          //   if (res.success == true) {
+          //   if (res.success) {
           //     this.$Message.success("编辑成功");
           //     this.closeCurrentPage();
           //   }
